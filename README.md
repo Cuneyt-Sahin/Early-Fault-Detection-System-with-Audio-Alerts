@@ -6,7 +6,7 @@
 ![ML](https://img.shields.io/badge/AI-Isolation%20Forest-green?style=for-the-badge&logo=scikit-learn)
 ![Status](https://img.shields.io/badge/Status-Completed-success?style=for-the-badge)
 
-> ### 🔴 [CLICK HERE FOR LIVE DEMO](https://your-app-link.streamlit.app)
+> ### 🔴 [CLICK HERE FOR LIVE DEMO](https://early-fault-detection-system-with-audio-alerts-cs.streamlit.app)
 > *Experience the real-time predictive maintenance simulation directly in your browser without installation.*
 
 ---
@@ -30,7 +30,7 @@ This project utilizes the industry-standard **[NASA IMS Bearing Dataset](https:/
 ![High Failure Risk Alert](images/2.png)
 *The "High Failure Risk" screen triggered when the AI detects an anomaly.*
 
-![Digital Twin Simulation](images/3.png)
+![Digital Twin Simulation](images/3.jpeg)
 *Digital Twin area visualizing the real-time status of the motor.*
 ![Control Center](images/4.png)
 *You can resize the x-axis dimension of the graph to your desired size or download the processed data as a CSV file.*
