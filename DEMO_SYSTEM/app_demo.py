@@ -1,11 +1,11 @@
 import streamlit as st
-import paho.mqtt.client as mqtt
 import json
 import pandas as pd
 import time
-import queue
 import altair as alt
 import base64
+import os
+
 st.set_page_config(page_title="Predictive Maintenance Platform", page_icon="🏭", layout="wide")
 
 st.markdown("""
@@ -22,15 +22,12 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- GLOBAL KUYRUK ---
-@st.cache_resource
-def get_shared_queue():
-    return queue.Queue()
-
-# --- MQTT SETTİNGS ---
-MQTT_BROKER = "broker.hivemq.com"
-MQTT_PORT = 1883
-TOPIC_SUBSCRIBE = "cum/iot/rulman_sonuc"
+BASE_DIR = os.path.dirname(__file__)
+ROOT_DIR = os.path.abspath(os.path.join(BASE_DIR, ".."))
+SHARED_DIR = os.path.join(ROOT_DIR, "SHARED_FILES")
+CSV_PATH = os.path.join(SHARED_DIR, "sensor_data.csv")
+ALARM_PATH = os.path.join(SHARED_DIR, "alarm.wav")
+MOTOR_GIF = os.path.join(ROOT_DIR, "images", "motor.gif")
 
 # --- SESSION STATE ---
 if "full_archive" not in st.session_state:
@@ -39,51 +36,52 @@ if "full_archive" not in st.session_state:
 if "latest_data" not in st.session_state:
     st.session_state.latest_data = None
 
-# --- MQTT CALLBACK ---
-def on_message(client, userdata, msg):
-    try:
-        payload = json.loads(msg.payload.decode())
-        q = get_shared_queue()
-        q.put(payload)
-    except Exception as e:
-        print(f"Hata: {e}")
+if "run_system" not in st.session_state:
+    st.session_state.run_system = False
 
-# --- İSTEMCİ KURULUMU ---
-if "mqtt_client_connected" not in st.session_state:
-    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
-    client.on_message = on_message
-    try:
-        client.connect(MQTT_BROKER, MQTT_PORT, 60)
-        client.subscribe(TOPIC_SUBSCRIBE)
-        client.loop_start()
-        st.session_state.mqtt_client_connected = True
-    except Exception as e:
-        st.error(f"MQTT Hatası: {e}")
+if "demo_df" not in st.session_state:
+    st.session_state.demo_df = None
+
+if "demo_index" not in st.session_state:
+    st.session_state.demo_index = 0
+
+if "baseline_mean" not in st.session_state:
+    st.session_state.baseline_mean = None
+
+if "baseline_std" not in st.session_state:
+    st.session_state.baseline_std = None
 
 # --- DONUT CHART ---
 def make_donut(input_response, input_text):
     if input_response > 80:
-        chart_color = ['#27AE60', '#222222'] 
+        chart_color = ['#27AE60', '#222222']
     elif input_response > 50:
-        chart_color = ['#F39C12', '#222222'] 
+        chart_color = ['#F39C12', '#222222']
     else:
-        chart_color = ['#E74C3C', '#222222'] 
-        
+        chart_color = ['#E74C3C', '#222222']
+
     source = pd.DataFrame({
         "Topic": ['', input_text],
-        "% value": [100-input_response, input_response]
+        "% value": [100 - input_response, input_response]
     })
-    
+
     plot = alt.Chart(source).mark_arc(innerRadius=45, cornerRadius=20).encode(
         theta="% value",
-        color= alt.Color("Topic:N",
-                        scale=alt.Scale(
-                            domain=[input_text, ''],
-                            range=chart_color),
-                        legend=None),
+        color=alt.Color(
+            "Topic:N",
+            scale=alt.Scale(domain=[input_text, ''], range=chart_color),
+            legend=None,
+        ),
     ).properties(width=130, height=130)
-    
-    text = plot.mark_text(align='center', color=chart_color[0], font="Lato", fontSize=20, fontWeight=700, fontStyle="italic").encode(text=alt.value(f'{input_response} %'))
+
+    text = plot.mark_text(
+        align='center',
+        color=chart_color[0],
+        font="Lato",
+        fontSize=20,
+        fontWeight=700,
+        fontStyle="italic",
+    ).encode(text=alt.value(f'{input_response} %'))
     return plot + text
 
 # --- ÇİZGİ GRAFİK ---
@@ -95,34 +93,33 @@ def make_line_chart(data, y_col, title, color):
     base = alt.Chart(chart_data).encode(
         x=alt.X('index', title='Zaman Adımları', axis=alt.Axis(labels=True), scale=alt.Scale(domain=[min_x, max_x], nice=False))
     )
-    
+
     line = base.mark_line(strokeWidth=3, color=color).encode(
-        y=alt.Y(y_col, title=title, scale=alt.Scale(zero=False)), 
+        y=alt.Y(y_col, title=title, scale=alt.Scale(zero=False)),
         tooltip=[y_col, 'timestamp']
     )
-    
+
     area = base.mark_area(opacity=0.3, color=color).encode(
         y=alt.Y(y_col, scale=alt.Scale(zero=False))
     )
-    
+
     return (line + area).properties(height=280)
 
 # --- SESLİ UYARI FONKSİYONU ---
 def play_alarm_sound():
-    audio_file = "alarm.wav" 
-    
+    audio_file = ALARM_PATH
+
     try:
         with open(audio_file, "rb") as f:
             data = f.read()
             b64 = base64.b64encode(data).decode()
-            
+
         mime_type = "audio/wav"
-        import time
-        unique_id = time.time() 
+        unique_id = time.time()
 
         sound_placeholder.empty()
-        time.sleep(0.1) 
-        
+        time.sleep(0.1)
+
         sound_placeholder.markdown(
             f"""
             <audio autoplay=True>
@@ -131,7 +128,7 @@ def play_alarm_sound():
             """,
             unsafe_allow_html=True
         )
-            
+
     except FileNotFoundError:
         st.error(f"⚠️ Ses dosyası ({audio_file}) bulunamadı!")
 
@@ -139,76 +136,138 @@ def play_alarm_sound():
 with st.sidebar:
     st.image("https://cdn-icons-png.flaticon.com/512/2830/2830528.png", width=50)
     st.header("Kontrol Merkezi")
-    st.success("Sistem Online 🟢")
+    st.success("Demo Online 🟢")
+    st.warning("🔊 Lütfen alarm sesini duyabilmek için sistem sesini açınız.")
     st.markdown("---")
-    
+
+    col_start, col_stop = st.columns(2)
+    with col_start:
+        if st.button("▶️ Başlat", use_container_width=True):
+            st.session_state.run_system = True
+    with col_stop:
+        if st.button("⏹️ Durdur", use_container_width=True):
+            st.session_state.run_system = False
+
+    if st.session_state.run_system:
+        st.success("Sistem çalışıyor")
+    else:
+        st.info("Sistem durduruldu")
+
+    st.markdown("---")
+
     history_len = st.slider("📊 Grafik Penceresi", 50, 500, 100, 50)
     st.markdown("---")
-    
+
     download_placeholder = st.empty()
-    
+
     st.markdown("---")
-    
+
     st.markdown("### 👨‍💻 Geliştirici")
     st.info(
         """
         **Ad Soyad:** Cüneyt Şahin  
-        
+
         """
     )
 
 # --- ANA SAYFA ---
 st.title("IoT-Based Predictive Maintenance Platform")
 st.caption("End-to-End Prototyping with Simulated Bearing Data")
-st.warning("🔊 Lütfen alarm sesini duyabilmek için sistem sesini açınız.")
 st.markdown("---")
 
 dashboard_placeholder = st.empty()
 sound_placeholder = st.empty()
 
+if not st.session_state.run_system:
+    st.info("Sistemi başlatmak için sol menüden Başlat'a basın.")
+    st.stop()
+
+if st.session_state.demo_df is None:
+    try:
+        st.session_state.demo_df = pd.read_csv(CSV_PATH)
+        baseline_len = min(200, len(st.session_state.demo_df))
+        baseline_slice = st.session_state.demo_df["vibration"].iloc[:baseline_len]
+        st.session_state.baseline_mean = float(baseline_slice.mean()) if not baseline_slice.empty else 0.0
+        st.session_state.baseline_std = float(baseline_slice.std()) if not baseline_slice.empty else 1.0
+    except FileNotFoundError:
+        st.error(f"HATA: '{CSV_PATH}' dosyası bulunamadı!")
+        st.stop()
+
 while True:
-    q = get_shared_queue()
-    while not q.empty():
-        data = q.get()
-        st.session_state.latest_data = data
-        
-        new_row = {
-            "timestamp": data["timestamp"],
-            "vibration": data["vibration"],
-            "temperature": data["temperature"],
-            "health_score": data["health_score"],
-            "status": data["status"]
-        }
-        st.session_state.full_archive = pd.concat([st.session_state.full_archive, pd.DataFrame([new_row])], ignore_index=True)
+    df = st.session_state.demo_df
+    if df.empty:
+        st.error("HATA: CSV dosyası boş.")
+        st.stop()
+
+    row = df.iloc[st.session_state.demo_index]
+    st.session_state.demo_index += 1
+    if st.session_state.demo_index >= len(df):
+        st.session_state.demo_index = 0
+
+    vibration = float(row["vibration"])
+    temperature = float(row["temperature"])
+    mean = st.session_state.baseline_mean or 0.0
+    std = st.session_state.baseline_std or 1.0
+    z_score = (vibration - mean) / std if std > 0 else 0.0
+
+    if z_score >= 4:
+        status = "YÜKSEK ARIZA RİSKİ"
+    elif z_score >= 2:
+        status = "ERKEN UYARI (İncelenmeli)"
+    else:
+        status = "OPTİMUM"
+
+    health_score = max(1.0, min(99.9, 100 - (max(z_score, 0) * 15)))
+
+    payload = {
+        "timestamp": row["timestamp"],
+        "vibration": vibration,
+        "temperature": temperature,
+        "health_score": float(health_score),
+        "status": status
+    }
+
+    st.session_state.latest_data = payload
+    new_row = {
+        "timestamp": payload["timestamp"],
+        "vibration": payload["vibration"],
+        "temperature": payload["temperature"],
+        "health_score": payload["health_score"],
+        "status": payload["status"],
+    }
+    st.session_state.full_archive = pd.concat([
+        st.session_state.full_archive,
+        pd.DataFrame([new_row])
+    ], ignore_index=True)
 
     if not st.session_state.full_archive.empty:
         with download_placeholder.container():
             csv = st.session_state.full_archive.to_csv(index=False).encode('utf-8')
             unique_key = f"dl_btn_{len(st.session_state.full_archive)}_{time.time()}"
             st.download_button("📥 Raporu İndir (CSV)", csv, 'tum_bakim_verisi.csv', 'text/csv', key=unique_key)
+
     dashboard_placeholder.empty()
     with dashboard_placeholder.container():
         current_data = st.session_state.latest_data
-        
+
         if current_data:
             status = current_data["status"]
             health = int(current_data["health_score"])
             chart_data = st.session_state.full_archive.tail(history_len)
-            
 
             col_kpi1, col_kpi2, col_kpi3, col_donut = st.columns([1.5, 1, 1, 1.2])
-            
+
             with col_kpi1:
                 if status == "OPTİMUM":
                     bg_color = "#27AE60"
                     sound_placeholder.empty()
-                elif "UYARI" in status: # ERKEN UYARI
+                elif "UYARI" in status:
                     bg_color = "#F39C12"
-                    play_alarm_sound() 
-                else:
-                    bg_color = "#E74C3C" # KIRMIZI ALARM
                     play_alarm_sound()
-                
+                else:
+                    bg_color = "#E74C3C"
+                    play_alarm_sound()
+
                 st.markdown(f"""
                 <div style="background-color:{bg_color};padding:15px;border-radius:10px;color:white;box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);">
                     <h5 style="margin:0; opacity:0.8;">SİSTEM DURUMU</h5>
@@ -224,9 +283,9 @@ while True:
                 try:
                     ts_str = str(current_data["timestamp"]).split('.')
                     time_disp = f"{ts_str[-3]}:{ts_str[-2]}:{ts_str[-1]}" if len(ts_str) >= 3 else "..."
-                except:
+                except Exception:
                     time_disp = str(current_data["timestamp"])
-                    
+
                 st.metric("🕒 Son Veri Saati", time_disp)
                 st.metric("💾 Toplam Veri", len(st.session_state.full_archive))
 
@@ -235,42 +294,39 @@ while True:
                 st.altair_chart(donut, use_container_width=True)
                 st.markdown("<p style='text-align: center; font-weight: bold; margin-top: -10px;'>Genel Sağlık</p>", unsafe_allow_html=True)
 
-            # 2. GRAFİKLER
             st.markdown("### 📈 Canlı Sensör Analizi")
             col_g1, col_g2 = st.columns(2)
-            
+
             with col_g1:
                 st.markdown("**Titreşim Trendi**")
                 chart_vib = make_line_chart(chart_data, 'vibration', '', '#00B4D8')
                 st.altair_chart(chart_vib, use_container_width=True)
-            
+
             with col_g2:
                 st.markdown("**Sıcaklık Trendi**")
                 chart_temp = make_line_chart(chart_data, 'temperature', '', '#FF6B6B')
                 st.altair_chart(chart_temp, use_container_width=True)
-                
-            # 3. SON ALARMLAR
+
             risky = st.session_state.full_archive[st.session_state.full_archive['status'] != "OPTİMUM"].tail(5)
             if not risky.empty:
                 st.error("⚠️ Son Kaydedilen Kritik Olaylar")
                 st.dataframe(risky[['timestamp', 'status', 'vibration', 'temperature']].sort_index(ascending=False), use_container_width=True, hide_index=True)
 
-            # 4. DİJİTAL İKİZ
             st.markdown("---")
             st.markdown("### 🏗️ Dijital İkiz (Digital Twin) Simülasyonu")
-            
+
             col_twin1, col_twin2 = st.columns([1, 2])
             with col_twin1:
                 st.info("**Motor Durumu:** Aktif\n\n**RPM:** 1500\n\n**Bağlantı:** MQTT/TCP")
-            
+
             with col_twin2:
                 try:
-                    st.image("motor.gif", caption="Gerçek Zamanlı Motor Modeli (Temsili)", use_container_width=True)
-                except:
+                    st.image(MOTOR_GIF, caption="Gerçek Zamanlı Motor Modeli (Temsili)", use_container_width=True)
+                except Exception:
                     st.warning("⚠️ 'motor.gif' dosyası bulunamadı. Lütfen proje klasörüne bir GIF ekleyin.")
 
         else:
             st.info("Sistem Başlatılıyor... Veri Bekleniyor...")
             st.progress(0)
 
-    time.sleep(0.5) 
+    time.sleep(0.5)

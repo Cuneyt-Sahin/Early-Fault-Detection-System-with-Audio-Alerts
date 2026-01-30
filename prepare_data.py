@@ -3,7 +3,8 @@ import os
 import numpy as np
 import random
 
-DATA_DIR = "2nd_test" 
+DATA_DIR = "second_test"
+OUTPUT_PATH = os.path.join("SHARED_FILES", "sensor_data.csv")
 
 def veri_birlestir():
     
@@ -49,8 +50,9 @@ def veri_birlestir():
 
     final_df = pd.DataFrame(data_list)
     
-    final_df.to_csv("sensor_data.csv", index=False)
-    print(f"\nİŞLEM TAMAM! Toplam {len(final_df)} satır veri 'sensor_data.csv' dosyasına kaydedildi.")
+    os.makedirs(os.path.dirname(OUTPUT_PATH), exist_ok=True)
+    final_df.to_csv(OUTPUT_PATH, index=False)
+    print(f"\nİŞLEM TAMAM! Toplam {len(final_df)} satır veri '{OUTPUT_PATH}' dosyasına kaydedildi.")
 
 if __name__ == "__main__":
     if os.path.exists(DATA_DIR):

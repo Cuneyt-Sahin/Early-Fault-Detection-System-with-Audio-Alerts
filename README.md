@@ -24,10 +24,10 @@ This project utilizes the industry-standard **[NASA IMS Bearing Dataset](https:/
 
 ## 📸 Dashboard Preview
 
-![Main Dashboard - Optimum State](images/1.jpg)
+![Main Dashboard - Optimum State](images/1.png)
 *General view when the system is operating healthily (Optimum State).*
 
-![High Failure Risk Alert](images/2.jpg)
+![High Failure Risk Alert](images/2.png)
 *The "High Failure Risk" screen triggered when the AI detects an anomaly.*
 
 ![Digital Twin Simulation](images/3.png)
@@ -37,8 +37,8 @@ This project utilizes the industry-standard **[NASA IMS Bearing Dataset](https:/
 
 ## 🧾 Offline Report Preview
 
-![Model Performance Report](Rapor.png)
-*Generated via `rapor_output.py`.*
+![Model Performance Report](SHARED_FILES/report.png)
+*Generated via `report_output.py`.*
 ---
 
 ## 🚀 Key Features
@@ -67,15 +67,21 @@ This project utilizes the industry-standard **[NASA IMS Bearing Dataset](https:/
 
 ```bash
 IOT_PROJECT/
-├── subscriber.py        # (BRAIN) MQTT listener, AI Model, and Decision Logic
-├── publisher.py         # (SENSOR) Simulates raw data and publishes to MQTT
-├── dashboard.py         # (UI) Streamlit visualization dashboard
-├── prepare_data.py      # Tool to process NASA data into CSV
-├── rapor_output.py      # Offline performance analysis and graph generation
-├── requirements.txt     # Project dependencies
-├── sensor_data.csv      # Processed simulation data
-├── alarm.wav            # Audio alert file
-└── README.md            # Documentation
+├── REAL_IOT_SYSTEM/      # 🔴 Local (MQTT) system
+│   ├── subscriber.py     # (BRAIN) MQTT listener, AI Model, and Decision Logic
+│   ├── publisher.py      # (SENSOR) Simulates raw data and publishes to MQTT
+│   └── dashboard.py      # (UI) Streamlit dashboard (MQTT)
+├── DEMO_SYSTEM/          # 🟢 Cloud demo (CSV only)
+│   └── app_demo.py       # Streamlit demo app (CSV playback)
+├── SHARED_FILES/         # 📄 Shared files
+│   ├── sensor_data.csv   # Shared dataset
+│   ├── alarm.wav         # Audio alert
+│   ├── model.pkl         # Trained model
+│   ├── report.png        # Offline report image
+│   └── requirements.txt  # Dependencies
+├── prepare_data.py       # Tool to process NASA data into CSV
+├── report_output.py      # Offline performance analysis and graph generation
+└── images/               # UI screenshots and assets
 ```
 
 ## ⚡ Getting Started
@@ -91,28 +97,35 @@ cd project-name
 ### 2) Install Dependencies
 
 ```bash
-pip install -r requirements.txt
+pip install -r SHARED_FILES/requirements.txt
 ```
 
-### 3) Run the System
+### 3) Run the Local (MQTT) System
 To fully simulate the architecture, open 3 separate terminals and run the commands in this specific order:
 
 **Terminal 1 (Analysis Engine):**
 
 ```bash
-python subscriber.py
+python REAL_IOT_SYSTEM/subscriber.py
 ```
 
 **Terminal 2 (Data Stream):**
 
 ```bash
-python publisher.py
+python REAL_IOT_SYSTEM/publisher.py
 ```
 
 **Terminal 3 (User Interface):**
 
 ```bash
-streamlit run dashboard.py
+streamlit run REAL_IOT_SYSTEM/dashboard.py
+```
+
+### 4) Run the Demo (Cloud) System
+This version reads directly from `sensor_data.csv` and does not use MQTT:
+
+```bash
+streamlit run DEMO_SYSTEM/app_demo.py
 ```
 
 ---

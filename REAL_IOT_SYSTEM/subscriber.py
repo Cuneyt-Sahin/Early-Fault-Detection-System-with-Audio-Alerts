@@ -21,11 +21,13 @@ is_trained = False
 model = IsolationForest(n_estimators=100, contamination=0.01, random_state=42)
 
 # --- MODEL
-MODEL_DIR = os.path.join(os.path.dirname(__file__), "model")
-MODEL_PATH = os.path.join(MODEL_DIR, "model.pkl")
-STATE_PATH = os.path.join(MODEL_DIR, "state.json")
+BASE_DIR = os.path.dirname(__file__)
+ROOT_DIR = os.path.abspath(os.path.join(BASE_DIR, ".."))
+SHARED_DIR = os.path.join(ROOT_DIR, "SHARED_FILES")
+MODEL_PATH = os.path.join(SHARED_DIR, "model.pkl")
+STATE_PATH = os.path.join(SHARED_DIR, "state.json")
 
-os.makedirs(MODEL_DIR, exist_ok=True)
+os.makedirs(SHARED_DIR, exist_ok=True)
 
 if os.path.exists(MODEL_PATH):
     with open(MODEL_PATH, "rb") as file_handle:

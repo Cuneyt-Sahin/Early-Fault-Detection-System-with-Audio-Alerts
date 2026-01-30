@@ -8,7 +8,7 @@ import matplotlib.dates as mdates
 from collections import deque
 
 # --- AYARLAR ---
-DOSYA_ADI = 'sensor_data.csv'
+DOSYA_ADI = 'SHARED_FILES/sensor_data.csv'
 VERI_KOLONU = 'vibration'
 ZAMAN_KOLONU = 'timestamp'
 
@@ -115,6 +115,7 @@ ax3.set_xlabel('Model Tahmini')
 ax3.set_ylabel('Gerçek Durum')
 
 plt.tight_layout()
-plt.savefig('Rapor.png')
-print("\n✓ Akıllı filtreleme uygulandı. 'Rapor.png' oluşturuldu.")
+output_path = 'SHARED_FILES/report.png'
+plt.savefig(output_path)
+print(f"\n✓ Akıllı filtreleme uygulandı. '{output_path}' oluşturuldu.")
 plt.show()
