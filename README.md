@@ -7,11 +7,13 @@
 ![Status](https://img.shields.io/badge/Status-Completed-success?style=for-the-badge)
 
 > ### 🔴 [CLICK HERE FOR LIVE DEMO](https://early-fault-detection-system-with-audio-alerts-cs.streamlit.app)
+>
 > *Experience the real-time predictive maintenance simulation directly in your browser without installation.*
 
 ---
 
 ### ⚠️ Important Note Regarding the Dataset (NASA Bearing Dataset)
+
 This project utilizes the industry-standard **[NASA IMS Bearing Dataset](https://www.kaggle.com/datasets/vinayak123tyagi/bearing-dataset)**.
 
 * **Selected Data:** Specifically **Test Set No. 2**.
@@ -30,7 +32,7 @@ This project utilizes the industry-standard **[NASA IMS Bearing Dataset](https:/
 ![High Failure Risk Alert](images/2.png)
 *The "High Failure Risk" screen triggered when the AI detects an anomaly.*
 
-![Digital Twin Simulation](images/3.jpeg)
+![Digital Twin Simulation](images/motor.gif)
 *Digital Twin area visualizing the real-time status of the motor.*
 ![Control Center](images/4.png)
 *You can resize the x-axis dimension of the graph to your desired size or download the processed data as a CSV file.*
@@ -39,7 +41,7 @@ This project utilizes the industry-standard **[NASA IMS Bearing Dataset](https:/
 
 ![Model Performance Report](SHARED_FILES/report.png)
 *Generated via `report_output.py`.*
----
+---------------
 
 ## 🚀 Key Features
 
@@ -85,6 +87,7 @@ IOT_PROJECT/
 ```
 
 ## ⚡ Getting Started
+
 Follow these steps to run the project locally:
 
 ### 1) Clone the Repository
@@ -101,6 +104,7 @@ pip install -r SHARED_FILES/requirements.txt
 ```
 
 ### 3) Run the Local (MQTT) System
+
 To fully simulate the architecture, open 3 separate terminals and run the commands in this specific order:
 
 **Terminal 1 (Analysis Engine):**
@@ -122,6 +126,7 @@ streamlit run REAL_IOT_SYSTEM/dashboard.py
 ```
 
 ### 4) Run the Demo (Cloud) System
+
 This version reads directly from `sensor_data.csv` and does not use MQTT:
 
 ```bash
@@ -131,6 +136,7 @@ streamlit run DEMO_SYSTEM/app_demo.py
 ---
 
 ## 📊 Model Performance
+
 The model demonstrated high success rates in retrospective tests performed on the NASA dataset.
 
 **Accuracy:** 96.7%
@@ -138,7 +144,9 @@ The model demonstrated high success rates in retrospective tests performed on th
 **True Positives (Detected Failures):** 450
 
 **False Negatives (Missed Failures):** 0
+
 ## 👨‍💻 Author
+
 Cüneyt Şahin
 
 [LinkedIn Profile](https://www.linkedin.com/in/cuneyt-sahin)
